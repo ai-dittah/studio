@@ -1,0 +1,76 @@
+DITTAH STUDIO END-USER LICENSE AGREEMENT (EULA)
+
+Version 1.0 — February 2026
+
+This End-User License Agreement ("Agreement") is a legal agreement
+between you (either an individual or a single entity) and Dittah Inc.
+("Licensor") for the software product Dittah Studio, which includes
+Docker images, executable code, and associated media (the "Software").
+
+
+1. LICENSE GRANT
+
+Licensor hereby grants you a revocable, non-exclusive, non-transferable,
+limited license to download, install, and use the Software solely for
+personal, non-commercial use or internal evaluation purposes, strictly
+in accordance with the terms of this Agreement.
+
+
+2. RESTRICTIONS
+
+You agree not to, and you will not permit others to:
+
+  a. Commercial Use: Use the Software for any commercial purpose,
+     including but not limited to providing services to third parties,
+     internal production business workflows, or any revenue-generating
+     activity without a separate Enterprise License.
+
+  b. Reverse Engineering: Decompile, reverse engineer, disassemble,
+     attempt to derive the source code of, or decrypt the Software.
+
+  c. Redistribution: Copy, rent, lease, lend, sell, redistribute, or
+     sublicense the Software or the Docker images.
+
+  d. Modification: Modify, adapt, improve, or create derivative works
+     from the Software.
+
+
+3. INTELLECTUAL PROPERTY
+
+The Software, including its structure, organization, code, and brand
+assets (including the "Di" and "Ta" mascots, the "Dittah" name, and the
+tagline "Build with Intelligence. Run with Confidence."), are the
+valuable intellectual property of Dittah Inc. and are protected by
+copyright and trademark laws.
+
+
+4. TERMINATION
+
+This Agreement is effective until terminated by you or Licensor. Your
+rights under this Agreement will terminate automatically without notice
+if you fail to comply with any term(s) of this Agreement.
+
+
+5. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITH ALL FAULTS
+AND WITHOUT WARRANTY OF ANY KIND. DITTAH INC. DISCLAIMS ALL WARRANTIES,
+EXPRESS OR IMPLIED, INCLUDING THE WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE.
+
+
+6. LIMITATION OF LIABILITY
+
+TO THE EXTENT NOT PROHIBITED BY LAW, IN NO EVENT SHALL DITTAH INC. BE
+LIABLE FOR PERSONAL INJURY, OR ANY INCIDENTAL, SPECIAL, INDIRECT, OR
+CONSEQUENTIAL DAMAGES WHATSOEVER ARISING OUT OF OR RELATED TO YOUR USE
+OF THE SOFTWARE.
+
+
+7. COMMERCIAL INQUIRIES
+
+For commercial licensing, enterprise support, or production use,
+please contact:
+
+  Email:   info@dittah.com
+  Website: https://dittah.com

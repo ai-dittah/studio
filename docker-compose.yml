@@ -1,0 +1,250 @@
+version: '3.8'
+
+# =============================================================================
+# DITTAH 3.0 - Unified Docker Compose
+# =============================================================================
+# Usage:
+#   Normal:  docker compose up -d
+#   Support: docker compose --profile support up -d
+#
+# Required environment variables (see .env.example):
+#   - POSTGRES_PASSWORD
+#
+# First-time setup:
+#   1. docker-compose up -d
+#   2. Open http://localhost:4200
+#   3. Complete setup wizard (select profile, create admin)
+#
+# Profiles:
+#   Light:      8GB RAM - Local Ollama (llama3.2:3b)
+#   Medium:     16GB RAM - Local Ollama (qwen2.5:7b-instruct)
+#   Production: Cloud APIs (Groq) - requires API key
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # INFRASTRUCTURE SERVICES
+  # ===========================================================================
+
+  postgres:
+    image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-postgres:${DITTAH_VERSION:-latest}
+    container_name: dittah-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
+      DB_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - dittah-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  artemis-mq:
+    image: apache/activemq-artemis:2.33.0-alpine
+    container_name: dittah-artemis
+    environment:
+      ARTEMIS_USER: ${ARTEMIS_USER:-artemis}
+      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
+    ports:
+      - "127.0.0.1:${ARTEMIS_PORT:-61616}:61616"
+      - "127.0.0.1:${ARTEMIS_CONSOLE_PORT:-8161}:8161"
+    networks:
+      - dittah-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8161/console || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # ===========================================================================
+  # APPLICATION SERVICES
+  # ===========================================================================
+
+  api:
+    image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-api:${DITTAH_VERSION:-latest}
+    container_name: dittah-api
+    environment:
+      # Database
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
+      QUARKUS_DATASOURCE_USERNAME: ${DB_APP_USER:-cfappusr}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
+      # Auth Database
+      QUARKUS_DATASOURCE_AUTH_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
+      QUARKUS_DATASOURCE_AUTH_USERNAME: ${DB_AUTH_USER:-cfauthappusr}
+      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
+      # JMS
+      QUARKUS_ARTEMIS_URL: tcp://artemis-mq:61616
+      QUARKUS_ARTEMIS_USERNAME: ${ARTEMIS_USER:-artemis}
+      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
+      # CORS
+      QUARKUS_HTTP_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200,http://localhost:8081}
+      # Edition (ENTERPRISE or COMMUNITY)
+      DITTAH_EDITION: ${DITTAH_EDITION:-COMMUNITY}
+      # CLI wrapper URL (local LLM API server)
+      LLM_CLI_BASE_URL: ${LLM_CLI_BASE_URL:-http://host.docker.internal:8092}
+    ports:
+      - "${REST_SERVER_PORT:-8080}:8080"
+    networks:
+      - dittah-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      artemis-mq:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/setup/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  orchestrator:
+    image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-orchestrator:${DITTAH_VERSION:-latest}
+    container_name: dittah-orchestrator
+    environment:
+      # Database
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
+      QUARKUS_DATASOURCE_USERNAME: ${DB_APP_USER:-cfappusr}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
+      # Auth Database
+      QUARKUS_DATASOURCE_AUTH_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
+      QUARKUS_DATASOURCE_AUTH_USERNAME: ${DB_AUTH_USER:-cfauthappusr}
+      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
+      # JMS
+      BROKER_URI: tcp://artemis-mq:61616
+      QUARKUS_ARTEMIS_URL: tcp://artemis-mq:61616
+      QUARKUS_ARTEMIS_USERNAME: ${ARTEMIS_USER:-artemis}
+      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
+      # Intelligence service
+      PYTHON_PARSER_URL: http://intelligence:8090
+      PYTHON_PARSER_API_URL: http://intelligence:8090/parse/document
+      PYTHON_EXECUTOR_API_URL: http://intelligence:8090/transform/execute
+    networks:
+      - dittah-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      artemis-mq:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f quarkus || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  intelligence:
+    image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-intelligence:${DITTAH_VERSION:-latest}
+    container_name: dittah-intelligence
+    environment:
+      # LLM Configuration for code generation
+      LLM_API_URL: ${LLM_API_URL:-http://host.docker.internal:11434}
+      LLM_CODEGEN_PROVIDER: ${LLM_CODEGEN_PROVIDER:-ollama}
+      LLM_MODEL_CODEGEN: ${LLM_MODEL_CODEGEN:-ollama-qwen2.5-14b}
+    networks:
+      - dittah-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  ui:
+    image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-ui:${DITTAH_VERSION:-latest}
+    container_name: dittah-ui
+    environment:
+      BACKEND_SERVER_URL: ${BACKEND_URL:-http://localhost:8080}
+    ports:
+      - "${UI_PORT:-4200}:80"
+    networks:
+      - dittah-network
+    depends_on:
+      - api
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # ===========================================================================
+  # SUPPORT TOOLS (optional, use --profile support)
+  # ===========================================================================
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: dittah-pgadmin
+    profiles: ["support"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@dittah.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "127.0.0.1:${PGADMIN_PORT:-5051}:80"
+    networks:
+      - dittah-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+
+networks:
+  dittah-network:
+    driver: bridge
+    name: dittah-network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+
+volumes:
+  postgres_data:
+    name: dittah_db_data

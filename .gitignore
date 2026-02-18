@@ -1,0 +1,21 @@
+# Environment files with secrets
+.env
+
+# Production deployment (not public)
+docker-compose.prod.yml
+Caddyfile
+DEPLOYMENT.md
+
+# Backup files
+backups/
+
+# Docker volumes
+data/
+
+# IDE
+.claude/
+.idea/
+.vscode/
+
+# OS
+.DS_Store
