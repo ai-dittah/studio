@@ -60,6 +60,7 @@ services:
     ports:
       - "127.0.0.1:${ARTEMIS_PORT:-61616}:61616"
       - "127.0.0.1:${ARTEMIS_CONSOLE_PORT:-8161}:8161"
+      - "127.0.0.1:${ARTEMIS_STOMP_PORT:-61613}:61613"
     networks:
       - dittah-network
     healthcheck:
@@ -177,6 +178,11 @@ services:
       LLM_API_URL: ${LLM_API_URL:-http://host.docker.internal:11434}
       LLM_CODEGEN_PROVIDER: ${LLM_CODEGEN_PROVIDER:-ollama}
       LLM_MODEL_CODEGEN: ${LLM_MODEL_CODEGEN:-ollama-qwen2.5-14b}
+      # Artemis STOMP for async code generation events
+      ARTEMIS_STOMP_HOST: artemis-mq
+      ARTEMIS_STOMP_PORT: "61613"
+      ARTEMIS_STOMP_USER: ${ARTEMIS_USER:-artemis}
+      ARTEMIS_STOMP_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
     networks:
       - dittah-network
     extra_hosts:
