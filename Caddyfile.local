@@ -1,0 +1,56 @@
+# =============================================================================
+# DITTAH - Caddy Reverse Proxy (Local / Freeware)
+# =============================================================================
+# Single entry point for local Docker deployment.
+# No TLS - plain HTTP on port 80.
+# =============================================================================
+
+:80 {
+    # API endpoints → Quarkus REST server
+    handle /api/* {
+        reverse_proxy api:8080
+    }
+    handle /q/* {
+        reverse_proxy api:8080
+    }
+    handle /auth/* {
+        reverse_proxy api:8080
+    }
+    handle /chathistory/* {
+        reverse_proxy api:8080
+    }
+    handle /dashboard/* {
+        reverse_proxy api:8080
+    }
+    handle /download/* {
+        reverse_proxy api:8080
+    }
+    handle /model/* {
+        reverse_proxy api:8080
+    }
+    handle /upload/* {
+        reverse_proxy api:8080
+    }
+    handle /userprompt/* {
+        reverse_proxy api:8080
+    }
+
+    # WebSocket endpoints → Quarkus REST server
+    handle /agent/* {
+        reverse_proxy api:8080
+    }
+    handle /notification/* {
+        reverse_proxy api:8080
+    }
+    handle /code-generation/* {
+        reverse_proxy api:8080
+    }
+    handle /chat/* {
+        reverse_proxy api:8080
+    }
+
+    # Everything else → Angular UI
+    handle {
+        reverse_proxy ui:80
+    }
+}

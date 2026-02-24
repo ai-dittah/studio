@@ -1,10 +1,9 @@
 # Environment files with secrets
 .env
 
-# Production deployment (not public)
+# Production deployment (not public - deploy.sh --prod may symlink these here)
 docker-compose.prod.yml
 Caddyfile
-DEPLOYMENT.md
 
 # Backup files
 backups/
