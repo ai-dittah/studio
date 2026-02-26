@@ -217,7 +217,7 @@ services:
     ports:
       - "127.0.0.1:${LLM_API_PORT:-8092}:8092"
     volumes:
-      - ${CLAUDE_CONFIG_DIR:-~/.claude}:/home/appuser/.claude:ro
+      - claude_data:/home/appuser/.claude
     networks:
       - dittah-network
     extra_hosts:
@@ -324,3 +324,5 @@ volumes:
     name: dittah_db_data
   caddy_data:
     name: dittah_caddy_data
+  claude_data:
+    name: dittah_claude_data
