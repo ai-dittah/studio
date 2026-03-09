@@ -79,7 +79,7 @@ The installer will:
 4. Start all services
 5. Run health checks
 
-Once complete, open **http://localhost:4200** in your browser to start the setup wizard:
+Once complete, open **http://localhost** in your browser to start the setup wizard:
 1. Select your profile (Light / Medium / Production)
 2. Create your admin account
 3. Start using Dittah!
@@ -88,10 +88,12 @@ Once complete, open **http://localhost:4200** in your browser to start the setup
 
 | Service | Port | Description |
 |---------|------|-------------|
-| UI | 4200 | Web interface |
-| REST API | 8080 | Backend API server |
+| Caddy | 80 | Reverse proxy (entry point) |
+| UI | 4200 | Web interface (behind Caddy) |
+| REST API | 8080 | Backend API server (behind Caddy) |
 | Orchestrator | - | Workflow execution engine (JMS) |
 | Intelligence | - | Data processing and AI code generation |
+| LLM | 8092 | LLM API server (localhost only) |
 | PostgreSQL | 5432 | Database (localhost only) |
 | Artemis | 61616 | Message broker (localhost only) |
 
@@ -142,22 +144,23 @@ Profiles are selected during the setup wizard after first launch.
 ┌────────────────────────────────────────────────┐        │                  │
 │                Docker Containers               │        │  Local: Ollama   │
 │                                                │        │       OR         │
-│  ┌─────┐   ┌─────┐   ┌───────────┐            │        │  Cloud: Groq /   │
-│  │ ui  │──►│ api │──►│artemis-mq │            │        │  Anthropic /     │
-│  └─────┘   └──┬──┘   └─────┬─────┘            │        │  OpenAI /        │
-│               │             │                  │        │  Gemini          │
-│               │       ┌─────┴──────┐           │        └──────▲───────────┘
-│               │       │orchestrator│           │               │
-│               │       └─────┬──────┘           │               │
-│               │             │                  │               │
-│               │       ┌─────┴──────┐           │               │
-│               │       │intelligence├───────────┼───────────────┘
-│               │       └─────┬──────┘           │
-│               │             │                  │
-│            ┌──┴─────────────┴──┐               │
-│            │     postgres      │               │
-│            │ PostgreSQL+pgvector│               │
-│            └───────────────────┘               │
+│  ┌───────┐   ┌─────┐   ┌───────────┐          │        │  Cloud: Groq /   │
+│  │ caddy │──►│ ui  │   │artemis-mq │          │        │  Anthropic /     │
+│  │ :80   │──►│     │   └─────┬─────┘          │        │  OpenAI /        │
+│  └───────┘   └─────┘         │                │        │  Gemini          │
+│      │                 ┌─────┴──────┐         │        └──────▲───────────┘
+│      │                 │orchestrator│         │               │
+│      ▼                 └─────┬──────┘         │               │
+│  ┌─────┐                     │                │               │
+│  │ api │               ┌─────┴──────┐         │               │
+│  └──┬──┘               │intelligence├─────────┼───────────────┘
+│     │                  └─────┬──────┘         │
+│     │                        │                │
+│     │    ┌─────┐       ┌─────┴──────┐         │
+│     │    │ llm │       │  postgres  │         │
+│     │    └─────┘       │ pgvector   │         │
+│     └──────────────────┤            │         │
+│                        └────────────┘         │
 └────────────────────────────────────────────────┘
 ```
 
