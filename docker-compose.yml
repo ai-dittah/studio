@@ -31,8 +31,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-app}
-      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
-      DB_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-CHANGE_ME}
+      DB_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-CHANGE_ME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -56,7 +56,7 @@ services:
     container_name: dittah-artemis
     environment:
       ARTEMIS_USER: ${ARTEMIS_USER:-artemis}
-      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
+      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-CHANGE_ME}
     ports:
       - "127.0.0.1:${ARTEMIS_PORT:-61616}:61616"
       - "127.0.0.1:${ARTEMIS_CONSOLE_PORT:-8161}:8161"
@@ -86,15 +86,15 @@ services:
       # Database
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
       QUARKUS_DATASOURCE_USERNAME: ${DB_APP_USER:-cfappusr}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-CHANGE_ME}
       # Auth Database
       QUARKUS_DATASOURCE_AUTH_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
       QUARKUS_DATASOURCE_AUTH_USERNAME: ${DB_AUTH_USER:-cfauthappusr}
-      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
+      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-CHANGE_ME}
       # JMS
       QUARKUS_ARTEMIS_URL: tcp://artemis-mq:61616
       QUARKUS_ARTEMIS_USERNAME: ${ARTEMIS_USER:-artemis}
-      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
+      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-CHANGE_ME}
       # CORS
       QUARKUS_HTTP_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
       # Edition (ENTERPRISE or COMMUNITY)
@@ -141,16 +141,16 @@ services:
       # Database
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
       QUARKUS_DATASOURCE_USERNAME: ${DB_APP_USER:-cfappusr}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-CHANGE_ME}
       # Auth Database
       QUARKUS_DATASOURCE_AUTH_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
       QUARKUS_DATASOURCE_AUTH_USERNAME: ${DB_AUTH_USER:-cfauthappusr}
-      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
+      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-CHANGE_ME}
       # JMS
       BROKER_URI: tcp://artemis-mq:61616
       QUARKUS_ARTEMIS_URL: tcp://artemis-mq:61616
       QUARKUS_ARTEMIS_USERNAME: ${ARTEMIS_USER:-artemis}
-      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
+      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-CHANGE_ME}
       # Intelligence service
       PYTHON_PARSER_URL: http://intelligence:8090
       PYTHON_PARSER_API_URL: http://intelligence:8090/parse/document
@@ -186,7 +186,7 @@ services:
       ARTEMIS_STOMP_HOST: artemis-mq
       ARTEMIS_STOMP_PORT: "61613"
       ARTEMIS_STOMP_USER: ${ARTEMIS_USER:-artemis}
-      ARTEMIS_STOMP_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
+      ARTEMIS_STOMP_PASSWORD: ${ARTEMIS_PASSWORD:-CHANGE_ME}
       # Claude API via local LLM server
       LLM_CLAUDE_API_URL: ${LLM_CLAUDE_API_URL:-http://llm:8092}
     networks:

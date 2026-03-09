@@ -74,7 +74,7 @@ chmod +x install.sh
 
 The installer will:
 1. Check that Docker is installed and running
-2. Generate secure passwords and create a `.env` file
+2. Generate secure random passwords and create a `.env` file
 3. Pull Docker images from Docker Hub
 4. Start all services
 5. Run health checks
@@ -103,12 +103,17 @@ Once complete, open **http://localhost** in your browser to start the setup wiza
 # Check service health
 ./healthcheck.sh
 
-# Update to latest version
+# Update to latest version (run when a new release is available)
 ./update.sh
+
+# Rotate service passwords (database, message queue)
+./reset-passwords.sh
 
 # Stop and remove all containers and data
 ./uninstall.sh
 ```
+
+When a new release is published, run `./update.sh` to pull the latest images and restart all services. Your data and configuration are preserved.
 
 ## Manual Setup
 
@@ -119,7 +124,8 @@ If you prefer to configure things yourself instead of using `install.sh`:
 cp .env.example .env
 
 # 2. Edit .env and set your own passwords
-#    At minimum, set POSTGRES_PASSWORD to something secure
+#    Replace CHANGE_ME values for: POSTGRES_PASSWORD, DB_APP_PASSWORD,
+#    DB_AUTH_PASSWORD, and ARTEMIS_PASSWORD
 nano .env
 
 # 3. Pull images and start

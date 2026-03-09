@@ -33,6 +33,18 @@ fi
 # Load environment variables
 source .env
 
+# Warn if passwords are still at known insecure defaults
+KNOWN_DEFAULTS="cfappusr cfauthappusr artemis CHANGE_ME"
+for var in DB_APP_PASSWORD DB_AUTH_PASSWORD ARTEMIS_PASSWORD; do
+    val="${!var}"
+    for d in $KNOWN_DEFAULTS; do
+        if [ "$val" = "$d" ]; then
+            echo -e "${YELLOW}WARNING: $var is at a default value. Run ./reset-passwords.sh to fix.${NC}"
+            break
+        fi
+    done
+done
+
 # Pull latest images
 echo -e "${BLUE}Pulling latest images...${NC}"
 docker compose pull

@@ -64,6 +64,24 @@ echo ""
 
 if [ -f .env ]; then
     echo -e "${YELLOW}.env file already exists — keeping existing configuration.${NC}"
+
+    # Warn if passwords are still at known insecure defaults
+    source .env
+    INSECURE_DEFAULTS=false
+    KNOWN_DEFAULTS="cfappusr cfauthappusr artemis CHANGE_ME"
+    for var in DB_APP_PASSWORD DB_AUTH_PASSWORD ARTEMIS_PASSWORD; do
+        val="${!var}"
+        for d in $KNOWN_DEFAULTS; do
+            if [ "$val" = "$d" ]; then
+                INSECURE_DEFAULTS=true
+                echo -e "  ${YELLOW}WARNING: $var is still at a default value${NC}"
+                break
+            fi
+        done
+    done
+    if [ "$INSECURE_DEFAULTS" = true ]; then
+        echo -e "  ${YELLOW}Run ./reset-passwords.sh to generate secure random passwords${NC}"
+    fi
 else
     if [ ! -f .env.example ]; then
         echo -e "${RED}ERROR: .env.example not found${NC}"
@@ -73,7 +91,7 @@ else
     echo -e "${BLUE}Creating .env from .env.example...${NC}"
     cp .env.example .env
 
-    # Generate random passwords for all services
+    # Generate secure random passwords for all services
     GENERATED_POSTGRES_PW=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32 || true)
     GENERATED_ARTEMIS_PW=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32 || true)
     GENERATED_DB_APP_PW=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32 || true)
@@ -94,10 +112,7 @@ else
         sed -i "s/^DITTAH_EDITION=.*/DITTAH_EDITION=COMMUNITY/" .env
     fi
 
-    echo -e "  ${GREEN}Generated random POSTGRES_PASSWORD${NC}"
-    echo -e "  ${GREEN}Generated random ARTEMIS_PASSWORD${NC}"
-    echo -e "  ${GREEN}Generated random DB_APP_PASSWORD${NC}"
-    echo -e "  ${GREEN}Generated random DB_AUTH_PASSWORD${NC}"
+    echo -e "  ${GREEN}Generated secure random passwords${NC}"
     echo -e "  ${GREEN}Set DITTAH_EDITION=COMMUNITY${NC}"
 fi
 
