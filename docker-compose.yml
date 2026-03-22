@@ -210,6 +210,7 @@ services:
   llm:
     image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-llm:${DITTAH_VERSION:-latest}
     container_name: dittah-llm
+    command: ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8092", "--workers", "${LLM_WORKERS:-3}"]
     environment:
       # API keys passed from host environment
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
