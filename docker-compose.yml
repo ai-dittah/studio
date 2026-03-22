@@ -27,6 +27,27 @@ services:
   postgres:
     image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-postgres:${DITTAH_VERSION:-latest}
     container_name: dittah-postgres
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${PG_SHARED_BUFFERS:-2GB}
+      - -c
+      - work_mem=${PG_WORK_MEM:-64MB}
+      - -c
+      - maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-256MB}
+      - -c
+      - effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-10GB}
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
+      - -c
+      - wal_buffers=64MB
+      - -c
+      - max_wal_size=2GB
+      - -c
+      - max_parallel_workers_per_gather=4
+    shm_size: ${PG_SHM_SIZE:-2g}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
