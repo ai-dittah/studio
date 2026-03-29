@@ -27,33 +27,12 @@ services:
   postgres:
     image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-postgres:${DITTAH_VERSION:-latest}
     container_name: dittah-postgres
-    command:
-      - postgres
-      - -c
-      - shared_buffers=${PG_SHARED_BUFFERS:-2GB}
-      - -c
-      - work_mem=${PG_WORK_MEM:-64MB}
-      - -c
-      - maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-256MB}
-      - -c
-      - effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-10GB}
-      - -c
-      - random_page_cost=1.1
-      - -c
-      - effective_io_concurrency=200
-      - -c
-      - wal_buffers=64MB
-      - -c
-      - max_wal_size=2GB
-      - -c
-      - max_parallel_workers_per_gather=4
-    shm_size: ${PG_SHM_SIZE:-2g}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-app}
-      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-CHANGE_ME}
-      DB_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-CHANGE_ME}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
+      DB_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -77,7 +56,7 @@ services:
     container_name: dittah-artemis
     environment:
       ARTEMIS_USER: ${ARTEMIS_USER:-artemis}
-      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-CHANGE_ME}
+      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
     ports:
       - "127.0.0.1:${ARTEMIS_PORT:-61616}:61616"
       - "127.0.0.1:${ARTEMIS_CONSOLE_PORT:-8161}:8161"
@@ -107,15 +86,15 @@ services:
       # Database
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
       QUARKUS_DATASOURCE_USERNAME: ${DB_APP_USER:-cfappusr}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-CHANGE_ME}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
       # Auth Database
       QUARKUS_DATASOURCE_AUTH_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
       QUARKUS_DATASOURCE_AUTH_USERNAME: ${DB_AUTH_USER:-cfauthappusr}
-      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-CHANGE_ME}
+      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
       # JMS
       QUARKUS_ARTEMIS_URL: tcp://artemis-mq:61616
       QUARKUS_ARTEMIS_USERNAME: ${ARTEMIS_USER:-artemis}
-      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-CHANGE_ME}
+      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
       # CORS
       QUARKUS_HTTP_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
       # Edition (ENTERPRISE or COMMUNITY)
@@ -162,16 +141,16 @@ services:
       # Database
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
       QUARKUS_DATASOURCE_USERNAME: ${DB_APP_USER:-cfappusr}
-      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-CHANGE_ME}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-cfappusr}
       # Auth Database
       QUARKUS_DATASOURCE_AUTH_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-app}
       QUARKUS_DATASOURCE_AUTH_USERNAME: ${DB_AUTH_USER:-cfauthappusr}
-      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-CHANGE_ME}
+      QUARKUS_DATASOURCE_AUTH_PASSWORD: ${DB_AUTH_PASSWORD:-cfauthappusr}
       # JMS
       BROKER_URI: tcp://artemis-mq:61616
       QUARKUS_ARTEMIS_URL: tcp://artemis-mq:61616
       QUARKUS_ARTEMIS_USERNAME: ${ARTEMIS_USER:-artemis}
-      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-CHANGE_ME}
+      QUARKUS_ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
       # Intelligence service
       PYTHON_PARSER_URL: http://intelligence:8090
       PYTHON_PARSER_API_URL: http://intelligence:8090/parse/document
@@ -207,7 +186,7 @@ services:
       ARTEMIS_STOMP_HOST: artemis-mq
       ARTEMIS_STOMP_PORT: "61613"
       ARTEMIS_STOMP_USER: ${ARTEMIS_USER:-artemis}
-      ARTEMIS_STOMP_PASSWORD: ${ARTEMIS_PASSWORD:-CHANGE_ME}
+      ARTEMIS_STOMP_PASSWORD: ${ARTEMIS_PASSWORD:-artemis}
       # Claude API via local LLM server
       LLM_CLAUDE_API_URL: ${LLM_CLAUDE_API_URL:-http://llm:8092}
     networks:
@@ -231,7 +210,6 @@ services:
   llm:
     image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-llm:${DITTAH_VERSION:-latest}
     container_name: dittah-llm
-    command: ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8092", "--workers", "${LLM_WORKERS:-3}"]
     environment:
       # API keys passed from host environment
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -246,6 +224,84 @@ services:
       - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  chat-studio:
+    image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-chat:${DITTAH_VERSION:-latest}
+    container_name: dittah-chat-studio
+    environment:
+      # Database — Chat Studio manages its own csapp schema, needs superuser for CREATE SCHEMA
+      CS_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-app}
+      # Auth — must match Quarkus JWT secret
+      CS_JWT_SECRET: ${CS_JWT_SECRET:-secure-dittah-fence-@@-password}
+      CS_AUTH_COOKIE: ${CS_AUTH_COOKIE:-_Secure-LGID}
+      CS_JWT_ALGORITHM: HS256
+      # LLM + TTS + Ollama + Parser API
+      LLM_API_URL: http://llm:8092
+      TTS_PROVIDER: edge
+      PARSER_API_URL: http://intelligence:8090
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      # CORS
+      CS_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+    ports:
+      - "127.0.0.1:${CHAT_STUDIO_PORT:-8001}:8001"
+    volumes:
+      - chat_studio_models:/app/models
+      - chat_studio_data:/app/data
+    networks:
+      - dittah-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      llm:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  guru-studio:
+    image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-guru:${DITTAH_VERSION:-latest}
+    container_name: dittah-guru-studio
+    environment:
+      GS_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-app}
+      GS_JWT_SECRET: ${CS_JWT_SECRET:-secure-dittah-fence-@@-password}
+      GS_AUTH_COOKIE: ${CS_AUTH_COOKIE:-_Secure-LGID}
+      LLM_API_URL: http://llm:8092
+      PARSER_API_URL: http://intelligence:8090
+      GS_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+    ports:
+      - "127.0.0.1:${GURU_STUDIO_PORT:-8002}:8002"
+    volumes:
+      - guru_studio_data:/app/data
+    networks:
+      - dittah-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      llm:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -282,7 +338,7 @@ services:
     image: caddy:2-alpine
     container_name: dittah-caddy
     ports:
-      - "${CADDY_BIND:-127.0.0.1}:${CADDY_PORT:-80}:80"
+      - "127.0.0.1:${CADDY_PORT:-80}:80"
     volumes:
       - ${CADDYFILE:-./Caddyfile.local}:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -291,6 +347,8 @@ services:
     depends_on:
       - api
       - ui
+      - chat-studio
+      - guru-studio
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://localhost || exit 1"]
       interval: 30s
@@ -348,3 +406,9 @@ volumes:
     name: dittah_caddy_data
   claude_data:
     name: dittah_claude_data
+  chat_studio_models:
+    name: dittah_chat_studio_models
+  chat_studio_data:
+    name: dittah_chat_studio_data
+  guru_studio_data:
+    name: dittah_guru_studio_data
