@@ -277,41 +277,6 @@ services:
         max-size: "100m"
         max-file: "5"
 
-  guru-studio:
-    image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-guru:${DITTAH_VERSION:-latest}
-    container_name: dittah-guru-studio
-    environment:
-      GS_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-app}
-      GS_JWT_SECRET: ${CS_JWT_SECRET:-secure-dittah-fence-@@-password}
-      GS_AUTH_COOKIE: ${CS_AUTH_COOKIE:-_Secure-LGID}
-      LLM_API_URL: http://llm:8092
-      PARSER_API_URL: http://intelligence:8090
-      GS_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
-    ports:
-      - "127.0.0.1:${GURU_STUDIO_PORT:-8002}:8002"
-    volumes:
-      - guru_studio_data:/app/data
-    networks:
-      - dittah-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      llm:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "5"
-
   ui:
     image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-ui:${DITTAH_VERSION:-latest}
     container_name: dittah-ui
@@ -348,7 +313,6 @@ services:
       - api
       - ui
       - chat-studio
-      - guru-studio
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://localhost || exit 1"]
       interval: 30s
@@ -410,5 +374,3 @@ volumes:
     name: dittah_chat_studio_models
   chat_studio_data:
     name: dittah_chat_studio_data
-  guru_studio_data:
-    name: dittah_guru_studio_data
