@@ -97,6 +97,38 @@ Once complete, open **http://localhost** in your browser to start the setup wiza
 | PostgreSQL | 5432 | Database (localhost only) |
 | Artemis | 61616 | Message broker (localhost only) |
 
+## Passwords and Security
+
+All service passwords are **auto-generated** during first-time setup (`install.sh`) and stored in the `.env` file. No default passwords are used — each installation gets unique random credentials.
+
+The `.env` file is the single source of truth for all credentials. It is not committed to version control.
+
+### Rotating Passwords
+
+To rotate all service passwords:
+
+```bash
+./reset-passwords.sh
+```
+
+This will:
+1. Generate new random passwords
+2. Update the `.env` file
+3. Update passwords in PostgreSQL and Artemis
+4. Restart affected services
+
+You can also manually change individual passwords by editing `.env` and restarting:
+
+```bash
+# 1. Edit the password in .env
+nano .env
+
+# 2. Restart affected services
+docker compose up -d
+```
+
+**Note:** If you change database passwords manually, you must also update them inside PostgreSQL using `ALTER ROLE`. The `reset-passwords.sh` script handles this automatically.
+
 ## Management
 
 ```bash
@@ -106,7 +138,7 @@ Once complete, open **http://localhost** in your browser to start the setup wiza
 # Update to latest version (run when a new release is available)
 ./update.sh
 
-# Rotate service passwords (database, message queue)
+# Rotate service passwords
 ./reset-passwords.sh
 
 # Stop and remove all containers and data
@@ -124,8 +156,7 @@ If you prefer to configure things yourself instead of using `install.sh`:
 cp .env.example .env
 
 # 2. Edit .env and set your own passwords
-#    Replace CHANGE_ME values for: POSTGRES_PASSWORD, DB_APP_PASSWORD,
-#    DB_AUTH_PASSWORD, and ARTEMIS_PASSWORD
+#    Replace all CHANGE_ME values with secure random passwords
 nano .env
 
 # 3. Pull images and start
