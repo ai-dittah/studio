@@ -178,23 +178,18 @@ services:
     image: ${DITTAH_IMAGE_REGISTRY:-dittah}/studio-intelligence:${DITTAH_VERSION:-latest}
     container_name: dittah-intelligence
     environment:
-      # LLM Configuration for code generation
-      LLM_API_URL: ${LLM_API_URL:-http://host.docker.internal:11434}
-      LLM_CODEGEN_PROVIDER: ${LLM_CODEGEN_PROVIDER:-ollama}
-      LLM_MODEL_CODEGEN: ${LLM_MODEL_CODEGEN:-ollama-qwen2.5-14b}
+      # All LLM calls route through the unified gateway
+      LLM_GATEWAY_URL: http://llm:8092
       # Artemis STOMP for async code generation events
       ARTEMIS_STOMP_HOST: artemis-mq
       ARTEMIS_STOMP_PORT: "61613"
       ARTEMIS_STOMP_USER: ${ARTEMIS_USER}
       ARTEMIS_STOMP_PASSWORD: ${ARTEMIS_PASSWORD}
-      # Claude API via local LLM server
-      LLM_CLAUDE_API_URL: ${LLM_CLAUDE_API_URL:-http://llm:8092}
     networks:
       - dittah-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
-      - llm
+      llm:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
       interval: 30s
@@ -214,6 +209,8 @@ services:
       # API keys passed from host environment
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      # Database for provider config + audit logging
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-app}
     ports:
       - "127.0.0.1:${LLM_API_PORT:-8092}:8092"
     volumes:
@@ -222,6 +219,9 @@ services:
       - dittah-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
       interval: 30s
